@@ -1,22 +1,22 @@
 from fastapi import FastAPI
-from inference import load_model
-from api.models.iris import PredictRequest, PredictResponse
+from api.models.text_model import PredictRequest, PredictResponse
+from sentence_transformers import SentenceTransformer
+import joblib
+
 
 app = FastAPI()
-model = load_model("iris_classifier.joblib")
+
+transformer = SentenceTransformer("./model/sentence_transformer.model")
+classifier = joblib.load("./model/classifier.joblib")
 
 
 @app.get("/")
 def welcome_root():
-    return {"message": "Welcome to the ML API"}
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
+    return {"message": "Welcome to the ML API (H)"}
 
 
 @app.post("/predict")
 def predict(request: PredictRequest) -> PredictResponse:
-    prediction = model.predict(request.model_dump())
-    return PredictResponse(prediction=prediction)
+    embedding = transformer.encode([request.text])
+    prediction = classifier.predict(embedding)[0]
+    return PredictResponse(prediction=str(prediction))
